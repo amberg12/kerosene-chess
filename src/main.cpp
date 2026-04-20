@@ -21,7 +21,7 @@
 
 using namespace kerosene;
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     auto uci = std::make_unique<Uci>();
 
     if (argc > 1) {

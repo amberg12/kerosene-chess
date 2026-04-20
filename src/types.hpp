@@ -21,6 +21,10 @@
 
 namespace kerosene {
 
+constexpr std::string_view kStartPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+constexpr std::string_view kKiwiPete =
+  "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+
 class Color {
 public:
     enum Underlying : u8 {
@@ -36,6 +40,14 @@ public:
 
     /* implicit */ constexpr operator usize() const {
         return m_raw;
+    }
+
+    static auto parse(const std::string& color) -> Color {
+        if (color == "w" || color == "W") {
+            return kWhite;
+        }
+
+        return kBlack;
     }
 
 private:
@@ -82,6 +94,28 @@ public:
         return m_raw;
     }
 
+    static constexpr auto parse(std::string_view s) -> std::optional<Square> {
+        if (s.size() != 2) {
+            return std::nullopt;
+        }
+
+        char file_c = s[0];
+        char rank_c = s[1];
+
+        if (file_c < 'a' || file_c > 'h') {
+            return std::nullopt;
+        }
+
+        if (rank_c < '1' || rank_c > '8') {
+            return std::nullopt;
+        }
+
+        u8 file = static_cast<u8>(file_c - 'a');
+        u8 rank = static_cast<u8>(rank_c - '1');
+
+        return Square(file, rank);
+    }
+
 private:
     Underlying m_raw = kInvalid;
 };
@@ -121,12 +155,49 @@ public:
         kBPawn = 0b1000 | kWPawn,
         kBKnight,
         kBBishop,
-        kRRook,
-        kRQueen,
-        kRKing,
+        kBRook,
+        kBQueen,
+        kBKing,
     };
 
-    /* implicit */ Piece(Underlying raw) : m_raw(raw) {}
+    Piece() = default;
+
+    /* implicit */ Piece(Underlying raw) :
+        m_raw(raw) {
+    }
+
+    [[nodiscard]] constexpr static auto parse(char c) -> Piece {
+        switch (c) {
+        case 'P':
+            return kWPawn;
+        case 'N':
+            return kWKnight;
+        case 'B':
+            return kWBishop;
+        case 'R':
+            return kWRook;
+        case 'Q':
+            return kWQueen;
+        case 'K':
+            return kWKing;
+
+        case 'p':
+            return kBPawn;
+        case 'n':
+            return kBKnight;
+        case 'b':
+            return kBBishop;
+        case 'r':
+            return kBRook;
+        case 'q':
+            return kBQueen;
+        case 'k':
+            return kBKing;
+
+        default:
+            return kEmpty;
+        }
+    }
 
     [[nodiscard]] constexpr auto color() const -> Color {
         return m_raw & 0b1000 ? Color::kBlack : Color::kWhite;
@@ -136,8 +207,30 @@ public:
         return static_cast<PieceType::Underlying>(m_raw & 0b111);
     }
 
+    [[nodiscard]] auto to_string() const -> std::string {
+        switch (m_raw) {
+        case kWPawn:   return "P";
+        case kWKnight: return "N";
+        case kWBishop: return "B";
+        case kWRook:   return "R";
+        case kWQueen:  return "Q";
+        case kWKing:   return "K";
+
+        case kBPawn:   return "p";
+        case kBKnight: return "n";
+        case kBBishop: return "b";
+        case kBRook:   return "r";
+        case kBQueen:  return "q";
+        case kBKing:   return "k";
+
+        case kEmpty:
+        default:
+            return " ";
+        }
+    }
+
 private:
-    Underlying m_raw{};
+    Underlying m_raw{kEmpty};
 };
 
 }
