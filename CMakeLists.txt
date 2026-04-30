@@ -12,4 +12,5 @@ add_executable(Kerosene
         src/position.cpp
         src/position.hpp
         src/move.hpp
-        src/move.cpp)
+        src/move.cpp
+        src/util/bits.hpp)

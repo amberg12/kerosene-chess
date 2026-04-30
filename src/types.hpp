@@ -66,6 +66,27 @@ constexpr auto operator~(Color color) -> Color {
     return static_cast<Color::Underlying>(std::to_underlying(color.m_raw) ^ 1);
 }
 
+template<typename T>
+class ColorMap {
+public:
+    ColorMap() = default;
+
+    ColorMap(T white, T black) :
+        m_underlying({white, black}) {
+    }
+
+    auto operator[](Color color) -> T& {
+        return m_underlying[static_cast<usize>(color)];
+    }
+
+    auto operator[](Color color) const -> const T& {
+        return m_underlying[static_cast<usize>(color)];
+    }
+
+private:
+    std::array<T, 2> m_underlying{};
+};
+
 class Direction {
 public:
     enum Underlying {
@@ -104,6 +125,8 @@ public:
         kInvalid = 0x80,
     };
     // clang-format on
+
+    constexpr Square() = default;
 
     /* implicit */ constexpr Square(Underlying raw) :
         m_raw(raw) {
@@ -176,6 +199,8 @@ public:
         kQueen,
         kKing,
     };
+
+    constexpr PieceType() = default;
 
     /* implicit */ PieceType(Underlying raw) :
         m_raw(raw) {

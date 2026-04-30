@@ -92,6 +92,7 @@ auto Uci::handle_position(std::istringstream& is) -> void {
 }
 
 auto Uci::handle_d(std::istringstream& is) const -> void {
+    std::println("handling d");
     std::println("{}", m_position.to_string());
     std::println("Castling Rights: {}", m_position.castling_rights().to_string());
 }

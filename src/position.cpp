@@ -23,12 +23,49 @@
 
 namespace kerosene {
 
+auto PieceList::add_piece(Square at, Piece to) -> PieceId {
+    PieceId piece_id = [&] {
+        if (to.piece_type() == PieceType::kKing) {
+            return PieceId::king();
+        }
+
+        for (PieceId id : ~m_piece_mask) {
+            if (id == PieceId::king()) {
+                continue;
+            }
+
+            return id;
+        }
+
+        std::unreachable();
+    }();
+
+    m_squares[static_cast<usize>(piece_id)]     = at;
+    m_piece_types[static_cast<usize>(piece_id)] = to.piece_type();
+    m_piece_mask.set_id(piece_id);
+
+    return piece_id;
+}
+
+auto PieceList::move_piece(PieceId piece_id, Square dst) -> void {
+    m_squares[static_cast<usize>(piece_id)] = dst;
+}
+
+auto PieceList::delete_piece(PieceId piece_id) -> void {
+    m_piece_mask.unset_id(piece_id);
+}
+
+auto PieceList::mutate_piece(PieceId piece_id, PieceType to) -> void {
+    m_piece_types[static_cast<usize>(piece_id)] = to;
+}
+
 Position::Position(const Position& parent, Move move) :
+    m_mail_box(parent.m_mail_box),
+    m_piece_list(parent.m_piece_list),
+    m_side_to_move(parent.m_side_to_move),
     m_move_rule(parent.m_move_rule),
     m_castling_rights(parent.m_castling_rights),
-    m_en_passant_target_square(parent.m_en_passant_target_square),
-    m_mailbox(parent.m_mailbox),
-    m_side_to_move(parent.m_side_to_move) {
+    m_en_passant_target_square(parent.m_en_passant_target_square) {
     make_move(move);
 }
 
@@ -89,8 +126,12 @@ auto Position::parse(std::string_view fen) -> Position {
     return out;
 }
 
-auto Position::tile_at(Square at) const -> Piece {
-    return m_mailbox[at];
+auto Position::piece_at(Square at) const -> Piece {
+    return tile_at(at).unpack().second;
+}
+
+auto Position::tile_at(Square at) const -> Tile {
+    return m_mail_box[at];
 }
 
 auto Position::to_string() const -> std::string {
@@ -102,7 +143,7 @@ auto Position::to_string() const -> std::string {
             Square at{file, rank};
 
             out += "|";
-            out += tile_at(at).to_string();
+            out += piece_at(at).to_string();
         }
         out += "|\n";
     }
@@ -124,7 +165,7 @@ auto Position::make_move(Move move) -> void {
     switch (move.special_type()) {
     case Move::kNormal: {
         // TODO: consider double pushes for en passant square creation.
-        Piece target = tile_at(move.dst());
+        Piece target = piece_at(move.dst());
 
         if (!target.empty()) {
             delete_piece(move.dst());
@@ -134,7 +175,7 @@ auto Position::make_move(Move move) -> void {
         break;
     }
     case Move::kPromotion: {
-        Piece target = tile_at(move.dst());
+        Piece target = piece_at(move.dst());
 
         if (!target.empty()) {
             delete_piece(move.dst());
@@ -155,7 +196,7 @@ auto Position::make_move(Move move) -> void {
     }
     }
 
-    if (tile_at(move.src()).piece_type() == PieceType::kKing) {
+    if (piece_at(move.src()).piece_type() == PieceType::kKing) {
         m_castling_rights.del_castling_rights(CastlingRights::from_color(m_side_to_move));
     }
 
@@ -175,8 +216,9 @@ auto Position::make_move(Move move) -> void {
         m_castling_rights.del_castling_rights(CastlingRights::kBlackQSide);
     }
 
-    bool is_pawn_move = tile_at(move.src()).piece_type() == PieceType::kPawn;
-    bool is_capture = !tile_at(move.dst()).empty() && tile_at(move.dst()).color() != m_side_to_move;
+    bool is_pawn_move = piece_at(move.src()).piece_type() == PieceType::kPawn;
+    bool is_capture =
+      !piece_at(move.dst()).empty() && piece_at(move.dst()).color() != m_side_to_move;
 
     if (is_pawn_move || is_capture) {
         m_move_rule = 0;
@@ -188,22 +230,33 @@ auto Position::make_move(Move move) -> void {
 }
 
 auto Position::add_piece(Square at, Piece to) -> void {
-    m_mailbox[at] = to;
+    PieceId piece_id = m_piece_list[to.color()].add_piece(at, to);
+    Tile    tile{piece_id, to};
+
+    m_mail_box[at] = tile;
 }
 
 auto Position::move_piece(Square src, Square dst) -> void {
-    Piece moved_piece = m_mailbox[src];
+    Tile tile = tile_at(src);
+    auto [piece_id, piece] = tile.unpack();
 
-    m_mailbox[src] = Piece::kEmpty;
-    m_mailbox[dst] = moved_piece;
+    m_mail_box[dst] = tile;
+    m_mail_box[src] = Tile{};
+    m_piece_list[piece.color()].move_piece(piece_id, dst);
 }
 
 auto Position::delete_piece(Square at) -> void {
-    m_mailbox[at] = Piece::kEmpty;
+    auto [piece_id, piece] = tile_at(at).unpack();
+
+    m_piece_list[piece.color()].delete_piece(piece_id);
+    m_mail_box[at] = Tile{};
 }
 
 auto Position::mutate_piece(Square at, PieceType to) -> void {
-    m_mailbox[at] = Piece{m_mailbox[at].color(), to};
+    auto [piece_id, piece] = tile_at(at).unpack();
+
+    m_piece_list[piece.color()].mutate_piece(piece_id, to);
+    m_mail_box[at] = Tile{piece_id, {piece.color(), to}};
 }
 
 }  // kerosene
