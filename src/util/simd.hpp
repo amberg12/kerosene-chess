@@ -15,30 +15,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 #pragma once
-
-#include "position.hpp"
-
-
-#include <string>
+#include "../common.hpp"
 
 namespace kerosene {
-
-
-class Uci {
-public:
-    auto loop() -> void;
-    auto cli(int argc, char* argv[]) -> void;
-
-private:
-    auto execute_command(const std::string&) -> void;
-
-    auto handle_position(std::istringstream& is) -> void;
-    auto handle_d(std::istringstream& is) const -> void;
-    auto handle_perft(std::istringstream& is) const -> void;
-
-    Position m_position{Position::parse(kStartPos)};
-};
-
-}  // kerosene
+constexpr usize kMaxSimdAlign = 64;
+}  // namespace kerosene

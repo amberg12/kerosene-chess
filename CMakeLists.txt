@@ -13,4 +13,10 @@ add_executable(Kerosene
         src/position.hpp
         src/move.hpp
         src/move.cpp
-        src/util/bits.hpp)
+        src/util/bits.hpp
+        src/util/inplace_vector.hpp
+        src/move_generation.cpp
+        src/move_generation.hpp
+        src/util/simd.hpp
+        src/util/template.hpp
+        src/bit_board.hpp)

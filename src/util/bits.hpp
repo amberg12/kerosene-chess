@@ -17,6 +17,9 @@
  */
 
 #pragma once
+#include "template.hpp"
+
+
 #include <type_traits>
 
 namespace kerosene {
@@ -31,6 +34,34 @@ template<typename T>
     requires(std::is_integral_v<T>)
 constexpr auto lsb(T bits) -> T {
     return bits & -bits;
+}
+
+template<typename CastTo, typename Underlying = usize>
+    requires(IntegralConstructible<CastTo>)
+struct BitIterator {
+    explicit BitIterator(Underlying raw) :
+        m_raw{raw} {
+    }
+
+    auto operator++() -> BitIterator& {
+        m_raw = clear_lsb(m_raw);
+        return *this;
+    }
+
+    auto operator*() const -> CastTo {
+        return CastTo{static_cast<FirstConstructibleIntegralT<CastTo>>(std::countr_zero(m_raw))};
+    }
+
+    friend constexpr auto operator==(const BitIterator&, const BitIterator&) -> bool = default;
+
+private:
+    Underlying m_raw{};
+};
+
+template<typename T>
+    requires(std::is_integral_v<T>)
+constexpr auto signum(T val) -> int {
+    return val == 0 ? 0 : val > 0 ? 1 : -1;
 }
 
 }  // namespace kerosene
