@@ -67,7 +67,7 @@ auto Searcher::iterative_deepening() -> void {
             score = (mate_in(score) + 1) / 2;
         }
 
-        std::println("info depth {} {} {}", depth, score_string, score);
+        std::println("info depth {} score {} {}", depth, score_string, score);
     }
 
     std::println("bestmove {}", m_best_move.to_string());
