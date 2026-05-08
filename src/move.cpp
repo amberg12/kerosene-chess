@@ -25,7 +25,7 @@ auto Move::parse(const std::string& move, const Position& context) -> Move {
     Square dst = *Square::parse(move.substr(2, 2));
 
     if (move.size() == 5) {
-        return Move::create_promotion(src, dst, PieceType::parse(move[5]));
+        return Move::create_promotion(src, dst, PieceType::parse(move[4]));
     }
 
     if (context.en_passant() == dst) {
