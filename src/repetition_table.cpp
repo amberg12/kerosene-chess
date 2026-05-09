@@ -16,33 +16,26 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "position.hpp"
 #include "repetition_table.hpp"
-#include "search.hpp"
-#include <string>
+#include <algorithm>
+#include <ranges>
 
 namespace kerosene {
 
+auto RepetitionTable::push(const Position& pos) -> void {
+    m_repetitions.emplace_back(pos.hash());
+}
 
-class Uci {
-public:
-    auto loop() -> void;
-    auto cli(int argc, char* argv[]) -> void;
+auto RepetitionTable::pop() -> void {
+    m_repetitions.pop_back();
+}
 
-private:
-    auto execute_command(const std::string&) -> void;
+auto RepetitionTable::is_repetition(const Position& pos) -> bool {
+    namespace rv = std::views;
+    namespace rg = std::ranges;
 
-    auto handle_position(std::istringstream& is) -> void;
-    auto handle_d(std::istringstream& is) const -> void;
-    auto handle_perft(std::istringstream& is) const -> void;
-    auto handle_go(std::istringstream& is) -> void;
-
-    Position        m_position{Position::parse(kStartPos)};
-    RepetitionTable m_repetition_table{};
-
-    Searcher m_searcher{};
-};
-
-}  // kerosene
+    return rg::any_of(m_repetitions | rv::reverse | rv::drop(1), [&](ZKey key) {
+        return key == pos.hash();
+    });
+}
+}  // namespace kerosene

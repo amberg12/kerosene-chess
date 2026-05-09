@@ -17,32 +17,21 @@
  */
 
 #pragma once
-
-#include "position.hpp"
-#include "repetition_table.hpp"
-#include "search.hpp"
-#include <string>
+#include "types.hpp"
+#include "util/integer_types.hpp"
 
 namespace kerosene {
+class CastlingRights;
 
+using ZKey = u64;
 
-class Uci {
-public:
-    auto loop() -> void;
-    auto cli(int argc, char* argv[]) -> void;
+// Using an alternate method like a singleton to handle the zobrist keys seems to come up with some
+// awful assembly.
+auto init_zobrist() -> void;
 
-private:
-    auto execute_command(const std::string&) -> void;
+auto z_key_piece_square(Piece piece, Square square) -> ZKey;
+auto z_key_side_to_move() -> ZKey;
+auto z_key_en_passant_file(i8 file) -> ZKey;
+auto z_key_castling_rights(const CastlingRights& castling_rights) -> ZKey;
 
-    auto handle_position(std::istringstream& is) -> void;
-    auto handle_d(std::istringstream& is) const -> void;
-    auto handle_perft(std::istringstream& is) const -> void;
-    auto handle_go(std::istringstream& is) -> void;
-
-    Position        m_position{Position::parse(kStartPos)};
-    RepetitionTable m_repetition_table{};
-
-    Searcher m_searcher{};
-};
-
-}  // kerosene
+}

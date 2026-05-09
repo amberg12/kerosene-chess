@@ -15,13 +15,15 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <memory>
 
+#include <memory>
 #include "uci.hpp"
 
 using namespace kerosene;
 
 auto main(int argc, char* argv[]) -> int {
+    init_zobrist();
+
     auto uci = std::make_unique<Uci>();
 
     if (argc > 1) {
