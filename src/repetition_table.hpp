@@ -18,39 +18,20 @@
 
 #pragma once
 #include "position.hpp"
-#include "repetition_table.hpp"
-#include "score.hpp"
-#include "time_manager.hpp"
+#include "zobrist.hpp"
+#include <vector>
 
 namespace kerosene {
 
-enum class NodeType {
-    kRoot,
-    kNonPv,
-};
-
-class Searcher {
+class RepetitionTable {
 public:
-    Searcher() = default;
+    auto push(const Position& pos) -> void;
+    auto pop() -> void;
 
-    auto set_position(const Position& root_position, const RepetitionTable& repetition_table) -> void;
-
-    auto begin_search(TimeParameters time_parameters) -> void;
+    auto is_repetition(const Position& pos) -> bool;
 
 private:
-    auto iterative_deepening() -> void;
-
-    template<NodeType kNodeType>
-    auto quiesce(const Position& position, Score alpha, Score beta, i32 ply) -> Score;
-
-    template<NodeType kNodeType>
-    auto search(const Position& position, i32 depth, Score alpha, Score beta, i32 ply) -> Score;
-
-    Position        m_root_position = Position::parse(kStartPos);
-    RepetitionTable m_repetition_table{};
-
-    TimeManager m_time_manager;
-    Move        m_best_move;
+    std::vector<ZKey> m_repetitions;
 };
 
 }  // namespace kerosene

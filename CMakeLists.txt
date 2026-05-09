@@ -37,6 +37,8 @@ set(SRCS
         src/move_picker.hpp
         src/zobrist.cpp
         src/zobrist.hpp
+        src/repetition_table.cpp
+        src/repetition_table.hpp
 )
 
 add_executable(Kerosene

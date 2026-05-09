@@ -21,6 +21,7 @@
 #include "evaluation.hpp"
 #include "move_generation.hpp"
 #include "move_picker.hpp"
+#include "repetition_table.hpp"
 
 namespace kerosene {
 namespace {
@@ -45,8 +46,10 @@ constexpr auto get_node_info<NodeType::kNonPv>() -> NodeInfo {
 }
 }
 
-auto Searcher::set_position(const Position& root_position) -> void {
-    m_root_position = root_position;
+auto Searcher::set_position(const Position& root_position, const RepetitionTable& repetition_table)
+  -> void {
+    m_root_position    = root_position;
+    m_repetition_table = repetition_table;
 }
 
 auto Searcher::begin_search(TimeParameters time_parameters) -> void {
@@ -85,6 +88,10 @@ auto Searcher::quiesce(const Position& position, Score alpha, Score beta, i32 pl
         return 0;
     }
 
+    if (m_repetition_table.is_repetition(position)) {
+        return 0;
+    }
+
     MovePicker mp{position};
 
     Score best_score           = kNegativeInf;
@@ -108,7 +115,11 @@ auto Searcher::quiesce(const Position& position, Score alpha, Score beta, i32 pl
         ++searched_legal_moves;
 
         Position child_position{position, move};
-        Score score = -quiesce<NodeType::kNonPv>(child_position, -beta, -alpha, ply + 1);
+        m_repetition_table.push(child_position);
+
+        Score    score = -quiesce<NodeType::kNonPv>(child_position, -beta, -alpha, ply + 1);
+
+        m_repetition_table.pop();
 
         if (m_time_manager.stop()) {
             return 0;
@@ -141,6 +152,11 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         return 0;
     }
 
+    // We don't want to do draw detection at root if we have already repeated once.
+    if (!get_node_info<kNodeType>().is_root && m_repetition_table.is_repetition(position)) {
+        return 0;
+    }
+
     if (depth <= 0) {
         return quiesce<kNodeType>(position, alpha, beta, ply);
     }
@@ -155,7 +171,11 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         ++searched_legal_moves;
 
         Position child_position{position, move};
+        m_repetition_table.push(child_position);
+
         Score score = -search<NodeType::kNonPv>(child_position, depth - 1, -beta, -alpha, ply + 1);
+
+        m_repetition_table.pop();
 
         if (m_time_manager.stop()) {
             return 0;

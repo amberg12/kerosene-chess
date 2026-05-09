@@ -68,6 +68,8 @@ auto Uci::execute_command(const std::string& line) -> void {
 auto Uci::handle_position(std::istringstream& is) -> void {
     std::string token, fen;
 
+    m_repetition_table = RepetitionTable{};
+
     while (is >> token) {
         if (token == "fen") {
             while (is >> token) {
@@ -79,10 +81,13 @@ auto Uci::handle_position(std::istringstream& is) -> void {
             }
 
             m_position = Position::parse(fen);
+            m_repetition_table.push(m_position);
         } else if (token == "startpos") {
             m_position = Position::parse(kStartPos);
+            m_repetition_table.push(m_position);
         } else if (token == "kiwipete") {
             m_position = Position::parse(kKiwiPete);
+            m_repetition_table.push(m_position);
         }
 
         while (is >> token) {
@@ -92,6 +97,7 @@ auto Uci::handle_position(std::istringstream& is) -> void {
 
             Move move  = Move::parse(token, m_position);
             m_position = Position{m_position, move};
+            m_repetition_table.push(m_position);
         }
     }
 }
@@ -130,7 +136,7 @@ auto Uci::handle_go(std::istringstream& is) -> void {
         }
     }
 
-    m_searcher.set_position(m_position);
+    m_searcher.set_position(m_position, m_repetition_table);
     m_searcher.begin_search(time_parameters);
 }
 
