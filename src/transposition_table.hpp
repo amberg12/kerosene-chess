@@ -17,35 +17,40 @@
  */
 
 #pragma once
-#include "move_generation.hpp"
-#include "position.hpp"
+#include "move.hpp"
+#include "zobrist.hpp"
 
 namespace kerosene {
-
-class MovePicker {
-public:
-    enum Stage {
-        kGenerateMoves,
-        kScoreMoves,
-        kEmitMoves,
-    };
-
-    MovePicker(const Position& pos, Move tt_move) :
-        m_pos(pos),
-        m_tt_move(tt_move) {
-    }
-
-    auto next_move(bool skip_quiets = false) -> Move;
-
-private:
-    const Position& m_pos;
-    Move            m_tt_move;
-
-    Stage m_stage{kGenerateMoves};
-    usize m_emit_idx{};
-
-    MoveList                                  m_moves;
-    inplace_vector<i32, MoveList::capacity()> m_scores;
+struct TData {
+    Move move;
 };
 
-}  // namespace kerosene
+class TranspositionTable {
+    static constexpr usize kDefaultMb = 16;
+
+public:
+    TranspositionTable();
+    ~TranspositionTable();
+
+    auto probe(const Position& position) const -> std::optional<TData>;
+    auto write(const Position& position, Move move) const -> void;
+    auto clear() const -> void;
+
+private:
+    struct TSlot {
+        ZKey  key{};
+        TData data;
+    };
+
+    static constexpr auto mb_to_size(usize mb) -> usize;
+
+    auto allocate(usize mb) -> void;
+    auto destroy() -> void;
+
+    auto ptr(const Position& position) const -> TSlot*;
+
+    TSlot* m_data{nullptr};
+    usize  m_size{0};
+};
+
+}

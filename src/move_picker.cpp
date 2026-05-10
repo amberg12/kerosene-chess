@@ -19,6 +19,9 @@
 #include "move_picker.hpp"
 
 namespace kerosene {
+namespace {
+constexpr i32 kTtMove = 900'000'000;
+}
 
 auto MovePicker::next_move(bool skip_quiets) -> Move {
     switch (m_stage) {
@@ -33,7 +36,9 @@ auto MovePicker::next_move(bool skip_quiets) -> Move {
 
     case kScoreMoves: {
         for (auto move : m_moves) {
-            if (m_pos.is_capture(move)) {
+            if (move == m_tt_move) {
+                m_scores.emplace_back(kTtMove);
+            } else if (m_pos.is_capture(move)) {
                 PieceType victim = move.special_type() == Move::kEnPassant
                                    ? PieceType::kPawn
                                    : m_pos.piece_at(move.dst()).piece_type();

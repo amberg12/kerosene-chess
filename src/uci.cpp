@@ -62,6 +62,8 @@ auto Uci::execute_command(const std::string& line) -> void {
         handle_go(is);
     } else if (command == "isready") {
         std::println("readyok");
+    } else if (command == "ucinewgame") {
+        handle_ucinewgame();
     }
 }
 
@@ -138,6 +140,10 @@ auto Uci::handle_go(std::istringstream& is) -> void {
 
     m_searcher.set_position(m_position, m_repetition_table);
     m_searcher.begin_search(time_parameters);
+}
+
+auto Uci::handle_ucinewgame() -> void {
+    m_searcher.new_game();
 }
 
 }  // kerosene
