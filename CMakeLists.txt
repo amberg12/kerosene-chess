@@ -39,6 +39,8 @@ set(SRCS
         src/zobrist.hpp
         src/repetition_table.cpp
         src/repetition_table.hpp
+        src/transposition_table.cpp
+        src/transposition_table.hpp
 )
 
 add_executable(Kerosene

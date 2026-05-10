@@ -38,6 +38,7 @@ private:
     auto handle_d(std::istringstream& is) const -> void;
     auto handle_perft(std::istringstream& is) const -> void;
     auto handle_go(std::istringstream& is) -> void;
+    auto handle_ucinewgame() -> void;
 
     Position        m_position{Position::parse(kStartPos)};
     RepetitionTable m_repetition_table{};

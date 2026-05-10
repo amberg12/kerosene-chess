@@ -57,6 +57,10 @@ auto Searcher::begin_search(TimeParameters time_parameters) -> void {
     iterative_deepening();
 }
 
+auto Searcher::new_game() -> void {
+    m_tt.clear();
+}
+
 auto Searcher::iterative_deepening() -> void {
     Move best_move = generate_legal_moves(m_root_position).front();
 
@@ -92,7 +96,7 @@ auto Searcher::quiesce(const Position& position, Score alpha, Score beta, i32 pl
         return 0;
     }
 
-    MovePicker mp{position};
+    MovePicker mp{position, kNullMove};
 
     Score best_score           = kNegativeInf;
     i32   searched_legal_moves = 0;
@@ -161,7 +165,11 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         return quiesce<kNodeType>(position, alpha, beta, ply);
     }
 
-    MovePicker mp{position};
+    std::optional<TData> tt = m_tt.probe(position);
+
+    Move tt_move = get_node_info<kNodeType>().is_root ? m_best_move : tt ? tt->move : kNullMove;
+
+    MovePicker mp{position, tt_move};
 
     Move  best_move            = kNullMove;
     Score best_score           = kNegativeInf;
@@ -198,6 +206,8 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
     if constexpr (get_node_info<kNodeType>().is_root) {
         m_best_move = best_move;
     }
+
+    m_tt.write(position, best_move);
 
     if (searched_legal_moves == 0) {
         return position.checkers_nb() == 0 ? 0 : mated_in(ply);

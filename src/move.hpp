@@ -118,6 +118,8 @@ public:
 
     [[nodiscard]] static auto parse(const std::string& move, const Position& context) -> Move;
 
+    [[nodiscard]] friend constexpr auto operator==(const Move&, const Move&) -> bool = default;
+
     [[nodiscard]] constexpr operator bool() const {
         return m_raw != 0;
     }

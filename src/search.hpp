@@ -21,6 +21,7 @@
 #include "repetition_table.hpp"
 #include "score.hpp"
 #include "time_manager.hpp"
+#include "transposition_table.hpp"
 
 namespace kerosene {
 
@@ -33,9 +34,12 @@ class Searcher {
 public:
     Searcher() = default;
 
-    auto set_position(const Position& root_position, const RepetitionTable& repetition_table) -> void;
+    auto set_position(const Position& root_position, const RepetitionTable& repetition_table)
+      -> void;
 
     auto begin_search(TimeParameters time_parameters) -> void;
+
+    auto new_game() -> void;
 
 private:
     auto iterative_deepening() -> void;
@@ -46,8 +50,9 @@ private:
     template<NodeType kNodeType>
     auto search(const Position& position, i32 depth, Score alpha, Score beta, i32 ply) -> Score;
 
-    Position        m_root_position = Position::parse(kStartPos);
-    RepetitionTable m_repetition_table{};
+    Position           m_root_position = Position::parse(kStartPos);
+    RepetitionTable    m_repetition_table{};
+    TranspositionTable m_tt{};
 
     TimeManager m_time_manager;
     Move        m_best_move;
