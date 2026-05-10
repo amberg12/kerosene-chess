@@ -63,7 +63,9 @@ auto MovePicker::next_move(bool skip_quiets) -> Move {
 
         usize best_idx = m_moves.size();
         for (usize idx = m_emit_idx; idx < m_moves.size(); ++idx) {
-            if (skip_quiets && !m_pos.is_capture(m_moves[idx])) {
+            if (skip_quiets
+                && !(m_pos.is_capture(m_moves[idx])
+                    || m_moves[idx].special_type() == Move::kPromotion)) {
                 continue;
             }
 
