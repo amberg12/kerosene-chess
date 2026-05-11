@@ -43,6 +43,14 @@ public:
     auto new_game() -> void;
 
 private:
+    struct Stack {
+        Move killer{};
+
+        auto add_killer(Move move) -> void {
+            killer = move;
+        }
+    };
+
     auto iterative_deepening() -> void;
 
     template<NodeType kNodeType>
@@ -51,10 +59,11 @@ private:
     template<NodeType kNodeType>
     auto search(const Position& position, i32 depth, Score alpha, Score beta, i32 ply) -> Score;
 
-    Position           m_root_position = Position::parse(kStartPos);
-    RepetitionTable    m_repetition_table{};
-    TranspositionTable m_tt{};
-    History            m_history{};
+    Position               m_root_position = Position::parse(kStartPos);
+    RepetitionTable        m_repetition_table{};
+    TranspositionTable     m_tt{};
+    History                m_history{};
+    std::array<Stack, 256> m_ss{};
 
     TimeManager m_time_manager;
     Move        m_best_move;
