@@ -29,24 +29,34 @@ namespace kerosene {
 class History {
 public:
     auto update_quiet_history(const Position& pos, i32 depth, Move move) const -> void {
-        i16& entry = (*m_quiet_piece_table)[move.dst()][pos.piece_at(move.src()).compressed_idx()];
-        entry      = static_cast<i16>(entry + bonus(depth));
-        entry      = std::clamp(entry, static_cast<i16>(-kHistoryMax), kHistoryMax);
+        i16& entry = get_piece_to_entry(pos, move);
+        update_entry(entry, bonus(depth));
     }
 
     auto read_quiet_history(const Position& pos, Move move) {
-        return (*m_quiet_piece_table)[move.dst()][pos.piece_at(move.src()).compressed_idx()];
+        return get_piece_to_entry(pos, move);
     }
 
 private:
     static constexpr i16 kHistoryMax = 16384;
+    static constexpr i16 kHistoryMin = -16384;
 
     static constexpr auto bonus(i32 depth) -> i16 {
         return static_cast<i16>(std::clamp(320 * depth - 400, 0, 2400));
     }
 
-    std::unique_ptr<std::array<std::array<i16, 12>, 64>> m_quiet_piece_table =
-      std::make_unique<std::array<std::array<i16, 12>, 64>>();
+    static constexpr auto update_entry(i16& entry, i16 bonus) -> void {
+        i16 clamped_bonus = std::clamp(bonus, kHistoryMin, kHistoryMax);
+        entry += clamped_bonus - entry * std::abs(clamped_bonus) / kHistoryMax;
+    }
+
+    auto get_piece_to_entry(const Position& pos, Move move) const -> i16& {
+        return (*m_quiet_piece_table)[move.dst()][pos.piece_at(move.src()).compressed_idx()];
+    }
+
+    using PieceTo = std::array<std::array<i16, 12>, 64>;
+
+    std::unique_ptr<PieceTo> m_quiet_piece_table = std::make_unique<PieceTo>();
 };
 
 }  // namespace kerosene
