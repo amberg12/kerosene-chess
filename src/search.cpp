@@ -99,7 +99,7 @@ auto Searcher::quiesce(const Position& position, Score alpha, Score beta, i32 pl
         return 0;
     }
 
-    MovePicker mp{position, kNullMove, m_history};
+    MovePicker mp{position, kNullMove, m_history, kNullMove};
 
     Score best_score           = kNegativeInf;
     i32   searched_legal_moves = 0;
@@ -168,11 +168,14 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         return quiesce<kNodeType>(position, alpha, beta, ply);
     }
 
+    Stack& ss = m_ss[ply];
+    m_ss[ply + 1].killer = kNullMove;
+
     std::optional<TData> tt = m_tt.probe(position);
 
     Move tt_move = get_node_info<kNodeType>().is_root ? m_best_move : tt ? tt->move : kNullMove;
 
-    MovePicker mp{position, tt_move, m_history};
+    MovePicker mp{position, tt_move, m_history, ss.killer};
 
     Move  best_move            = kNullMove;
     Score best_score           = kNegativeInf;
@@ -205,6 +208,7 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
 
         if (score >= beta) {
             if (!is_loud) {
+                ss.add_killer(move);
                 m_history.update_quiet_history(position, depth, move);
             }
 

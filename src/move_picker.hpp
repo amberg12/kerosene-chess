@@ -31,10 +31,11 @@ public:
         kEmitMoves,
     };
 
-    MovePicker(const Position& pos, Move tt_move, History& history) :
+    MovePicker(const Position& pos, Move tt_move, History& history, Move killer) :
         m_pos(pos),
         m_tt_move(tt_move),
-        m_history(history) {
+        m_history(history),
+        m_killer(killer) {
     }
 
     auto next_move(bool skip_quiets = false) -> Move;
@@ -43,6 +44,7 @@ private:
     const Position& m_pos;
     History&        m_history;
     Move            m_tt_move;
+    Move            m_killer;
 
     Stage m_stage{kGenerateMoves};
     usize m_emit_idx{};
