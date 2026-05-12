@@ -20,9 +20,10 @@
 
 namespace kerosene {
 namespace {
-constexpr i32 kTtMove   = 900'000'000;
-constexpr i32 kLoudMove = 800'000'000;
-constexpr i32 kKiller   = 600'000'000;
+constexpr i32 kTtMove    = 900'000'000;
+constexpr i32 kLoudMove  = 800'000'000;
+constexpr i32 kPromotion = 700'000'000;
+constexpr i32 kKiller    = 600'000'000;
 }
 
 auto MovePicker::next_move(bool skip_quiets) -> Move {
@@ -49,6 +50,8 @@ auto MovePicker::next_move(bool skip_quiets) -> Move {
 
                 m_scores.emplace_back(kLoudMove + static_cast<usize>(victim) * 20
                                       - static_cast<usize>(attacker));
+            } else if (move.special_type() == Move::kPromotion) {
+                m_scores.emplace_back(kPromotion);
             } else if (move == m_killer) {
                 m_scores.emplace_back(kKiller);
             } else {
