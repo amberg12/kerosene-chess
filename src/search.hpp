@@ -26,11 +26,6 @@
 
 namespace kerosene {
 
-enum class NodeType {
-    kRoot,
-    kNonPv,
-};
-
 class Searcher {
 public:
     Searcher() = default;
@@ -43,6 +38,22 @@ public:
     auto new_game() -> void;
 
 private:
+    template<bool kIsPv, bool kIsRoot, typename N>
+    struct NodeType {
+        static constexpr bool is_pv   = kIsPv;
+        static constexpr bool is_root = kIsRoot;
+
+        using Next = N;
+    };
+
+    struct Root;
+    struct Pv;
+    struct NonPv;
+
+    struct Root : NodeType<true, true, Pv> { };
+    struct Pv : NodeType<true, false, Pv> { };
+    struct NonPv : NodeType<false, false, NonPv> { };
+
     struct Stack {
         Move killer{};
 
@@ -53,10 +64,10 @@ private:
 
     auto iterative_deepening() -> void;
 
-    template<NodeType kNodeType>
+    template<typename Node>
     auto quiesce(const Position& position, Score alpha, Score beta, i32 ply) -> Score;
 
-    template<NodeType kNodeType>
+    template<typename N>
     auto search(const Position& position, i32 depth, Score alpha, Score beta, i32 ply) -> Score;
 
     Position               m_root_position = Position::parse(kStartPos);

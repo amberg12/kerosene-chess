@@ -26,24 +26,6 @@
 namespace kerosene {
 namespace {
 constexpr i32 kMaxDepth = 255;
-
-struct NodeInfo {
-    bool is_root;
-    bool is_pv;
-};
-
-template<NodeType kNodeType>
-constexpr auto get_node_info() -> NodeInfo = delete;
-
-template<>
-constexpr auto get_node_info<NodeType::kRoot>() -> NodeInfo {
-    return {.is_root = true, .is_pv = true};
-}
-
-template<>
-constexpr auto get_node_info<NodeType::kNonPv>() -> NodeInfo {
-    return {.is_root = false, .is_pv = false};
-}
 }
 
 auto Searcher::set_position(const Position& root_position, const RepetitionTable& repetition_table)
@@ -71,11 +53,7 @@ auto Searcher::iterative_deepening() -> void {
 
     for (i32 depth = 1; depth < kMaxDepth; ++depth) {
         Score score =
-          search<NodeType::kRoot>(m_root_position, depth, kNegativeInf, kPositiveInf, 0);
-
-        if (m_time_manager.stop()) {
-            break;
-        }
+          search<Root>(m_root_position, depth, kNegativeInf, kPositiveInf, 0);
 
         std::string score_string = is_mate(score) ? "mate" : "cp";
 
@@ -89,7 +67,7 @@ auto Searcher::iterative_deepening() -> void {
     std::println("bestmove {}", m_best_move.to_string());
 }
 
-template<NodeType kNodeType>
+template<typename Node>
 auto Searcher::quiesce(const Position& position, Score alpha, Score beta, i32 ply) -> Score {
     if (m_time_manager.stop()) {
         return 0;
@@ -124,7 +102,7 @@ auto Searcher::quiesce(const Position& position, Score alpha, Score beta, i32 pl
         Position child_position{position, move};
         m_repetition_table.push(child_position);
 
-        Score score = -quiesce<NodeType::kNonPv>(child_position, -beta, -alpha, ply + 1);
+        Score score = -quiesce<NonPv>(child_position, -beta, -alpha, ply + 1);
 
         m_repetition_table.pop();
 
@@ -152,7 +130,7 @@ auto Searcher::quiesce(const Position& position, Score alpha, Score beta, i32 pl
     return best_score;
 }
 
-template<NodeType kNodeType>
+template<typename Node>
 auto Searcher::search(const Position& position, i32 depth, Score alpha, Score beta, i32 ply)
   -> Score {
     if (m_time_manager.stop()) {
@@ -160,12 +138,12 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
     }
 
     // We don't want to do draw detection at root if we have already repeated once.
-    if (!get_node_info<kNodeType>().is_root && m_repetition_table.is_repetition(position)) {
+    if (!Node::is_root && m_repetition_table.is_repetition(position)) {
         return 0;
     }
 
     if (depth <= 0) {
-        return quiesce<kNodeType>(position, alpha, beta, ply);
+        return quiesce<typename Node::Next>(position, alpha, beta, ply);
     }
 
     Stack& ss            = m_ss[ply];
@@ -173,7 +151,7 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
 
     std::optional<TData> tt = m_tt.probe(position);
 
-    Move tt_move = get_node_info<kNodeType>().is_root ? m_best_move : tt ? tt->move : kNullMove;
+    Move tt_move = Node::is_root ? m_best_move : tt ? tt->move : kNullMove;
 
     MovePicker mp{position, tt_move, m_history, ss.killer};
 
@@ -189,7 +167,7 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         Position child_position{position, move};
         m_repetition_table.push(child_position);
 
-        Score score = -search<NodeType::kNonPv>(child_position, depth - 1, -beta, -alpha, ply + 1);
+        Score score = -search<typename Node::Next>(child_position, depth - 1, -beta, -alpha, ply + 1);
 
         m_repetition_table.pop();
 
@@ -202,6 +180,10 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
             best_move  = move;
 
             if (score > alpha) {
+                if constexpr (Node::is_root) {
+                    m_best_move = best_move;
+                }
+
                 alpha = score;
             }
         }
@@ -214,10 +196,6 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
 
             break;
         }
-    }
-
-    if constexpr (get_node_info<kNodeType>().is_root) {
-        m_best_move = best_move;
     }
 
     m_tt.write(position, best_move);
