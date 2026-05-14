@@ -42,6 +42,12 @@ public:
         return BitBoard(~static_cast<u64>(0));
     }
 
+    constexpr static auto file(i8 file) -> BitBoard {
+        constexpr BitBoard kFile{72340172838076673ull};
+
+        return kFile << file;
+    }
+
     constexpr auto set_square(Square square) -> void {
         BitBoard set_bit_board{square};
         *this |= set_bit_board;
@@ -105,6 +111,14 @@ public:
 
     friend constexpr auto operator~(BitBoard bit_board) -> BitBoard {
         return BitBoard{~bit_board.m_raw};
+    }
+
+    friend constexpr auto operator>>(BitBoard bit_board, std::integral auto rhs) -> BitBoard {
+        return BitBoard{bit_board.m_raw >> rhs};
+    }
+
+    friend constexpr auto operator<<(BitBoard bit_board, std::integral auto rhs) -> BitBoard {
+        return BitBoard{bit_board.m_raw << rhs};
     }
 
     static constexpr auto ray_exclusive(Square src, Square dst) {
