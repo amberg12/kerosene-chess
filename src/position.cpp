@@ -251,6 +251,10 @@ auto Position::checkers_nb() const -> i32 {
     return checker_mask.popcount();
 }
 
+auto Position::check() const -> bool {
+    return checkers_nb() > 0;
+}
+
 auto Position::pin_rays() const -> BitBoard {
     return m_pin_rays;
 }
