@@ -337,6 +337,7 @@ public:
     [[nodiscard]] auto king_square(Color side_to_move) const -> Square;
     [[nodiscard]] auto king_square() const -> Square;
     [[nodiscard]] auto checkers_nb() const -> i32;
+    [[nodiscard]] auto check() const -> bool;
     [[nodiscard]] auto pin_rays() const -> BitBoard;
 
     [[nodiscard]] auto is_capture(Move move) const -> bool;

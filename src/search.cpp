@@ -162,6 +162,14 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
 
     Move tt_move = Node::is_root ? m_best_move : tt ? tt->move : kNullMove;
 
+    Score static_eval = evaluate(position);
+
+    if (!Node::is_pv && !position.check()) {
+        if (depth <= 5 && static_eval - 150 * depth >= beta) {
+            return static_eval;
+        }
+    }
+
     MovePicker mp{position, tt_move, m_history, ss.killer};
 
     Move  best_move            = kNullMove;
