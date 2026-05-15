@@ -37,8 +37,6 @@ auto Searcher::set_position(const Position& root_position, const RepetitionTable
 auto Searcher::begin_search(TimeParameters time_parameters) -> void {
     m_nodes = 0;
 
-    m_history = History{};  // TODO: remove - we would rather have a malus scheme over aging.
-
     m_time_manager = TimeManager{m_root_position.side_to_move(), time_parameters};
     iterative_deepening();
 }
@@ -170,6 +168,8 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         }
     }
 
+    MoveList fail_low_quiets{};
+
     MovePicker mp{position, tt_move, m_history, ss.killer};
 
     Move  best_move            = kNullMove;
@@ -218,10 +218,14 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         if (score >= beta) {
             if (!is_loud) {
                 ss.add_killer(move);
-                m_history.update_quiet_history(position, depth, move);
+                m_history.update_quiet_history(position, depth, move, fail_low_quiets);
             }
 
             break;
+        }
+
+        if (!is_loud && move != best_move) {
+            fail_low_quiets.emplace_back(move);
         }
     }
 

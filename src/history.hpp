@@ -18,6 +18,7 @@
 
 #pragma once
 #include "move.hpp"
+#include "move_generation.hpp"
 #include "position.hpp"
 #include "util/integer_types.hpp"
 
@@ -28,9 +29,14 @@ namespace kerosene {
 
 class History {
 public:
-    auto update_quiet_history(const Position& pos, i32 depth, Move move) const -> void {
+    auto update_quiet_history(const Position& pos, i32 depth, Move move, const MoveList& failed) const -> void {
         i16& entry = get_piece_to_entry(pos, move);
         update_entry(entry, bonus(depth));
+
+        for (Move m : failed) {
+            i16& e = get_piece_to_entry(pos, m);
+            update_entry(e, malus(depth));
+        }
     }
 
     auto read_quiet_history(const Position& pos, Move move) {
@@ -43,6 +49,10 @@ private:
 
     static constexpr auto bonus(i32 depth) -> i16 {
         return static_cast<i16>(std::clamp(320 * depth - 400, 0, 2400));
+    }
+
+    static constexpr auto malus(i32 depth) -> i16 {
+        return static_cast<i16>(-std::clamp(320 * depth - 400, 0, 1200));
     }
 
     static constexpr auto update_entry(i16& entry, i16 bonus) -> void {
