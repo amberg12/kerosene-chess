@@ -42,6 +42,10 @@ constexpr auto mate_in(Score score) -> i32 {
     return score > 0 ? kMateScore - score : kMateScore + score;
 }
 
+constexpr auto is_loss(Score score) -> bool {
+    return (score != kScoreNone || score != kNegativeInf) && score < 0 && is_mate(score);
+}
+
 struct ScorePair {
     Score mg{};
     Score eg{};
