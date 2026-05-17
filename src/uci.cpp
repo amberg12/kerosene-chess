@@ -17,6 +17,7 @@
  */
 
 #include "uci.hpp"
+#include "evaluation.hpp"
 #include "move.hpp"
 #include "move_generation.hpp"
 #include "util/integer_types.hpp"
@@ -110,6 +111,7 @@ auto Uci::handle_d(std::istringstream& is) const -> void {
     std::println("handling d");
     std::println("{}", m_position.to_string());
     std::println("Castling Rights: {}", m_position.castling_rights().to_string());
+    std::println("{}", evaluate(m_position));
 }
 
 auto Uci::handle_perft(std::istringstream& is) const -> void {
@@ -208,17 +210,17 @@ auto Uci::handle_bench() -> void {
     }};
 
     TimeParameters params = {
-        .wtime = 1000ms,
-        .btime = 1000ms,
-        .winc  = 100ms,
-        .binc  = 100ms,
+      .wtime = 1000ms,
+      .btime = 1000ms,
+      .winc  = 100ms,
+      .binc  = 100ms,
     };
 
     time::TimePoint start = time::Clock::now();
-    Nodes nodes = 0;
+    Nodes           nodes = 0;
 
     for (const auto& fen : kFens) {
-        Searcher searcher{};
+        Searcher        searcher{};
         RepetitionTable repetition_table;
 
         searcher.set_position(Position::parse(fen), repetition_table);
