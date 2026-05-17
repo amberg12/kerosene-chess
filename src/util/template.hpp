@@ -48,4 +48,9 @@ concept IntegralConstructible = std::constructible_from<T, i8> || std::construct
                              || std::constructible_from<T, i32> || std::constructible_from<T, u32>
                              || std::constructible_from<T, i64> || std::constructible_from<T, u64>;
 
+auto to_unsigned(std::integral auto x) {
+    using U = std::make_unsigned_t<decltype(x)>;
+    return static_cast<U>(x);
+}
+
 }

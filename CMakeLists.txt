@@ -41,12 +41,15 @@ set(SRCS
         src/repetition_table.hpp
         src/transposition_table.cpp
         src/transposition_table.hpp
+        src/util/math.hpp
 )
 
 add_executable(Kerosene
         src/main.cpp
         ${SRCS}
         src/history.hpp
+        src/util/defer.hpp
+        src/util/macro.hpp
 )
 
 add_executable(KeroseneTuning

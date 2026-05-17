@@ -22,6 +22,8 @@
 #include "move_generation.hpp"
 #include "move_picker.hpp"
 #include "repetition_table.hpp"
+#include "util/defer.hpp"
+#include "util/math.hpp"
 
 namespace kerosene {
 namespace {
@@ -225,28 +227,40 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
 
     Move  best_move            = kNullMove;
     Score best_score           = kNegativeInf;
-    i32   searched_legal_moves = 0;
+    i32   move_count = 0;
 
     for (Move move = mp.next_move(); move; move = mp.next_move()) {
-        ++searched_legal_moves;
+        ++move_count;
 
         bool is_loud = position.is_capture(move) || move.special_type() == Move::kPromotion;
 
         Position child_position{position, move};
         m_repetition_table.push(child_position);
+        DEFER {
+            m_repetition_table.pop();
+        };
 
         Score score{};
-        if (searched_legal_moves == 1) {
-            score = -search<typename Node::Next>(child_position, depth - 1, -beta, -alpha, ply + 1);
-        } else {
-            score = -search<NonPv>(child_position, depth - 1, -alpha - 1, -alpha, ply + 1);
 
-            if (score > alpha && Node::is_pv) {
-                score = -search<Pv>(child_position, depth - 1, -beta, -alpha, ply + 1);
+        i32 new_depth = depth - 1;
+
+        if (depth >= 3 && move_count >= 3) {
+            i32 r = 2 + log2(depth) * log2(move_count) / 4;
+
+            const i32 lmr_depth = std::clamp(new_depth - r, 0, new_depth);
+
+            score = -search<NonPv>(child_position, lmr_depth, -alpha - 1, -alpha, ply + 1);
+
+            if (score > alpha && lmr_depth < new_depth) {
+                score = -search<NonPv>(child_position, new_depth, -alpha - 1, -alpha, ply + 1);
             }
+        } else if (!Node::is_pv || move_count > 1) {
+            score = -search<NonPv>(child_position, new_depth, -alpha - 1, -alpha, ply + 1);
         }
 
-        m_repetition_table.pop();
+        if (Node::is_pv && (move_count == 1 || score > alpha)) {
+            score = -search<Pv>(child_position, new_depth, -beta, -alpha, ply + 1);
+        }
 
         if (m_time_manager.stop()) {
             return 0;
@@ -280,7 +294,7 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
         }
     }
 
-    if (searched_legal_moves == 0) {
+    if (move_count == 0) {
         best_score = position.checkers_nb() == 0 ? 0 : mated_in(ply);
     }
 
