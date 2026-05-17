@@ -17,40 +17,32 @@
  */
 
 #pragma once
-#include "history.hpp"
-#include "move_generation.hpp"
-#include "position.hpp"
+#include "move.hpp"
 
 namespace kerosene {
 
-class MovePicker {
-public:
-    enum Stage {
-        kGenerateMoves,
-        kScoreMoves,
-        kEmitMoves,
-    };
-
-    MovePicker(const Position& pos, const Move tt_move, history& history, const Move killer) :
-        m_pos(pos),
-        m_history(history),
-        m_tt_move(tt_move),
-        m_killer(killer) {
-    }
-
-    auto next_move(bool skip_quiets = false) -> Move;
-
-private:
-    const Position& m_pos;
-    history&        m_history;
-    Move            m_tt_move;
-    Move            m_killer;
-
-    Stage m_stage{kGenerateMoves};
-    usize m_emit_idx{};
-
-    MoveList                                  m_moves;
-    inplace_vector<i32, MoveList::capacity()> m_scores;
+struct ss_item {
+    Move killer_move = kNullMove;
 };
 
-}  // namespace kerosene
+class search_stack {
+public:
+    search_stack() = default;
+
+    [[nodiscard]] auto at(i32 ply) const -> const ss_item& {
+        return m_ss[idx(ply)];
+    }
+
+    [[nodiscard]] auto at(i32 ply) -> ss_item& {
+        return m_ss[idx(ply)];
+    }
+
+private:
+    static constexpr auto idx(i32 ply) -> i32 {
+        return ply + 10;
+    }
+
+    std::array<ss_item, 300> m_ss{};
+};
+
+}

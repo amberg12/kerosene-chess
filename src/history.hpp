@@ -27,46 +27,52 @@
 
 namespace kerosene {
 
-class History {
-public:
-    auto update_quiet_history(const Position& pos, i32 depth, Move move, const MoveList& failed) const -> void {
-        i16& entry = get_piece_to_entry(pos, move);
-        update_entry(entry, bonus(depth));
+constexpr i32 history_max = 16384;
 
-        for (Move m : failed) {
-            i16& e = get_piece_to_entry(pos, m);
-            update_entry(e, malus(depth));
-        }
+constexpr auto bonus(const i32 depth) -> i16 {
+    return static_cast<i16>(std::clamp(320 * depth - 400, 0, 2400));
+}
+
+constexpr auto malus(const i32 depth) -> i16 {
+    return static_cast<i16>(-std::clamp(320 * depth - 400, 0, 1200));
+}
+
+template<typename T>
+constexpr auto update_with_gravity(T& entry, const i32 bonus) -> void
+    requires(std::is_integral_v<T>)
+{
+    const auto clamped_bonus = static_cast<T>(std::clamp(bonus, -history_max, history_max));
+    entry += clamped_bonus - entry * std::abs(clamped_bonus) / history_max;
+}
+
+template<typename T>
+class piece_to_table {
+public:
+    using value_type = T;
+
+    [[nodiscard]] auto read(const Position& pos, const Move move) const -> const T& {
+        return m_table[move.dst()][pos.piece_at(move.src()).compressed_idx()];
     }
 
-    auto read_quiet_history(const Position& pos, Move move) {
-        return get_piece_to_entry(pos, move);
+    [[nodiscard]] auto read(const Position& pos, const Move move) -> T& {
+        return m_table[move.dst()][pos.piece_at(move.src()).compressed_idx()];
+    }
+
+    auto write(const Position& pos, const Move move, const T value) -> void
+        requires(std::is_integral_v<T>)
+    {
+        T& entry = read(pos, move);
+        update_with_gravity(entry, value);
     }
 
 private:
-    static constexpr i16 kHistoryMax = 16384;
-    static constexpr i16 kHistoryMin = -16384;
+    using table = std::array<std::array<T, 12>, 64>;
 
-    static constexpr auto bonus(i32 depth) -> i16 {
-        return static_cast<i16>(std::clamp(320 * depth - 400, 0, 2400));
-    }
+    table m_table{};
+};
 
-    static constexpr auto malus(i32 depth) -> i16 {
-        return static_cast<i16>(-std::clamp(320 * depth - 400, 0, 1200));
-    }
-
-    static constexpr auto update_entry(i16& entry, i16 bonus) -> void {
-        i16 clamped_bonus = std::clamp(bonus, kHistoryMin, kHistoryMax);
-        entry += clamped_bonus - entry * std::abs(clamped_bonus) / kHistoryMax;
-    }
-
-    auto get_piece_to_entry(const Position& pos, Move move) const -> i16& {
-        return (*m_quiet_piece_table)[move.dst()][pos.piece_at(move.src()).compressed_idx()];
-    }
-
-    using PieceTo = std::array<std::array<i16, 12>, 64>;
-
-    std::unique_ptr<PieceTo> m_quiet_piece_table = std::make_unique<PieceTo>();
+struct history {
+    piece_to_table<i16> quiet_history;
 };
 
 }  // namespace kerosene

@@ -55,7 +55,7 @@ auto MovePicker::next_move(bool skip_quiets) -> Move {
             } else if (move == m_killer) {
                 m_scores.emplace_back(kKiller);
             } else {
-                m_scores.emplace_back(m_history.read_quiet_history(m_pos, move));
+                m_scores.emplace_back(m_history.quiet_history.read(m_pos, move));
             }
         }
 
