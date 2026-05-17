@@ -17,7 +17,6 @@
  */
 
 #include "search.hpp"
-
 #include "evaluation.hpp"
 #include "move_generation.hpp"
 #include "move_picker.hpp"
@@ -225,14 +224,21 @@ auto Searcher::search(const Position& position, i32 depth, Score alpha, Score be
 
     MovePicker mp{position, tt_move, m_history, ss.killer};
 
-    Move  best_move            = kNullMove;
-    Score best_score           = kNegativeInf;
+    Move  best_move  = kNullMove;
+    Score best_score = kScoreNone;
     i32   move_count = 0;
 
-    for (Move move = mp.next_move(); move; move = mp.next_move()) {
-        ++move_count;
-
+    bool skip_quiets = false;
+    for (Move move = mp.next_move(skip_quiets); move; move = mp.next_move(skip_quiets)) {
         bool is_loud = position.is_capture(move) || move.special_type() == Move::kPromotion;
+
+        if (!Node::is_root && !position.check() && !is_loss(best_score)) {
+            if (!is_loud && move_count >= 5 + depth * depth) {
+                skip_quiets = true;
+            }
+        }
+
+        ++move_count;
 
         Position child_position{position, move};
         m_repetition_table.push(child_position);
